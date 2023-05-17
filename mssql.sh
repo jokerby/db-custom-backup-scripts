@@ -9,6 +9,7 @@
 #                               |_|   |_|    
 export PATH=$PATH:'/opt/mssql-tools/bin'
 DATE=$(date '+%F')
+BACKUP_EXTENTION='bak'
 DESTINATION_PATH='/var/opt/mssql/backup'
 TEMP_PATH='/tmp'
 LOG_PATH='/var/log/mssql/backup'
@@ -43,13 +44,12 @@ function writelog {
 	echo $MESSAGE
 }
 function createbackup {
-	DB_PATH="$1"
-	writelog "Starting back up and validate procedure of $DB_PATH database"
-	DB_NAME="$(basename $DB_PATH .gdb)"
+	DB_NAME="$1"
+	writelog "Starting back up and validate procedure of $DB_NAME database"
 	mkdir -p "$DESTINATION_PATH/$DB_NAME/DAILY"
-	BAK_PATH="$DESTINATION_PATH/$DB_NAME/DAILY/$DATE.bak"
-	writelog "Creating bak file"
-	sqlcmd -S localhost -U "$DB_USER" -P "$DB_PASSWORD" -Q "BACKUP DATABASE [$DB_NAME] TO DISK = N'$BAK_PATH' WITH NOFORMAT, NOINIT, NAME = '$DB_NAME', SKIP, NOREWIND, NOUNLOAD, STATS = 10"
+	BACKUP_PATH="$DESTINATION_PATH/$DB_NAME/DAILY/$DATE.$BACKUP_EXTENTION"
+	writelog "Creating $BACKUP_EXTENTION file"
+	sqlcmd -S localhost -U "$DB_USER" -P "$DB_PASSWORD" -Q "BACKUP DATABASE [$DB_NAME] TO DISK = N'$BACKUP_PATH' WITH NOFORMAT, NOINIT, NAME = '$DB_NAME', SKIP, NOREWIND, NOUNLOAD, STATS = 10"
 	if [[ $? -ne 0 ]]
 	then
 		ERROR=$((ERROR + 1))
@@ -59,14 +59,14 @@ function createbackup {
 	fi
 	writelog 'Deleting old daily backups'
 	ls -t "$DESTINATION_PATH/$DB_NAME/DAILY" | awk "NR>$KEEP_LAST_DAILY" | xargs rm -f
-	ln -sf $(realpath --relative-to="$DESTINATION_PATH/$DB_NAME" "$GBK_PATH") "$DESTINATION_PATH/$DB_NAME/recent-backup.bak"
+	ln -sf $(realpath --relative-to="$DESTINATION_PATH/$DB_NAME" "$BACKUP_PATH") "$DESTINATION_PATH/$DB_NAME/recent-backup.$BACKUP_EXTENTION"
 #	cd "$DESTINATION_PATH/$DB_NAME"
-#	ln -sf "DAILY/$DATE.bak" 'recent-backup.bak'
+#	ln -sf "DAILY/$DATE.$BACKUP_EXTENTION" 'recent-backup.$BACKUP_EXTENTION'
 	if [[ $(date +%u) -eq 7 ]]
 	then
 		writelog 'Copying week backup'
 		mkdir -p "$DESTINATION_PATH/$DB_NAME/WEEKLY"
-		cp -p "$GBK_PATH" "$DESTINATION_PATH/$DB_NAME/WEEKLY"
+		cp -p "$BACKUP_PATH" "$DESTINATION_PATH/$DB_NAME/WEEKLY"
 		writelog 'Deleting old weekly backups'
 		ls -t "$DESTINATION_PATH/$DB_NAME/WEEKLY" | awk "NR>$KEEP_LAST_WEEKLY" | xargs rm -f
 	fi
@@ -74,11 +74,11 @@ function createbackup {
 	then
 		writelog 'Copying month backup'
 		mkdir -p "$DESTINATION_PATH/$DB_NAME/MONTHLY"
-		cp -p "$GBK_PATH" "$DESTINATION_PATH/$DB_NAME/MONTHLY"
+		cp -p "$BACKUP_PATH" "$DESTINATION_PATH/$DB_NAME/MONTHLY"
 		writelog 'Deleting old monthly backups'
 		ls -t "$DESTINATION_PATH/$DB_NAME/MONTHLY" | awk "NR>$KEEP_LAST_WEEKLY" | xargs rm -f
 	fi
-	writelog "Backup size $(du -h $GBK_PATH | awk '{print $1}')"
+	writelog "Backup size $(du -h $BACKUP_PATH | awk '{print $1}')"
 }
 function checkmount() {
 	findmnt "$DESTINATION_PATH" >/dev/null;
