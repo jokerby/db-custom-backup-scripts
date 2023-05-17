@@ -11,6 +11,7 @@ export PATH=$PATH:'/opt/interbase/bin'
 DATE=$(date '+%F')
 SOURCE_PATH='/var/lib/interbase'
 DB_EXTENTION='gdb'
+BACKUP_EXTENTION='gbk'
 DESTINATION_PATH='/var/lib/backup'
 TEMP_PATH='/tmp'
 LOG_PATH='/var/log/interbase'
@@ -48,9 +49,9 @@ function createbackup {
 	writelog "Starting back up and validate procedure of $DB_PATH database"
 	DB_NAME="$(basename $DB_PATH .$DB_EXTENTION)"
 	mkdir -p "$DESTINATION_PATH/$DB_NAME/DAILY"
-	BACKUP_PATH="$DESTINATION_PATH/$DB_NAME/DAILY/$DATE.$DB_EXTENTION"
+	BACKUP_PATH="$DESTINATION_PATH/$DB_NAME/DAILY/$DATE.$BACKUP_EXTENTION"
 	TEMP_DB_PATH="$TEMP_PATH/$DB_NAME.$DB_EXTENTION"
-	writelog "Creating $DB_EXTENTION file"
+	writelog "Creating $BACKUP_EXTENTION file"
 	gbak -USER "$DB_USER" -PASSWORD "$DB_PASSWORD" -BACKUP_DATABASE "$DB_PATH" "$BACKUP_PATH"
 	if [[ $? -ne 0 ]]
 	then
@@ -82,9 +83,9 @@ function createbackup {
 	rm "$TEMP_DB_PATH"
 	writelog 'Deleting old daily backups'
 	ls -t "$DESTINATION_PATH/$DB_NAME/DAILY" | awk "NR>$KEEP_LAST_DAILY" | xargs rm -f
-	ln -sf $(realpath --relative-to="$DESTINATION_PATH/$DB_NAME" "$BACKUP_PATH") "$DESTINATION_PATH/$DB_NAME/recent-backup.$DB_EXTENTION"
+	ln -sf $(realpath --relative-to="$DESTINATION_PATH/$DB_NAME" "$BACKUP_PATH") "$DESTINATION_PATH/$DB_NAME/recent-backup.$BACKUP_EXTENTION"
 #	cd "$DESTINATION_PATH/$DB_NAME"
-#	ln -sf "DAILY/$DATE.$DB_EXTENTION" 'recent-backup.$DB_EXTENTION'
+#	ln -sf "DAILY/$DATE.$BACKUP_EXTENTION" 'recent-backup.$BACKUP_EXTENTION'
 	if [[ $(date +%u) -eq 7 ]]
 	then
 		writelog 'Copying week backup'
