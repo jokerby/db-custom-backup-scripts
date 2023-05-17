@@ -23,12 +23,12 @@ declare -a DBS=('db1' 'db2')
 WARNING=0
 ERROR=0
 #email
-EMAIL_FROM='MSSQL <backup@example.com>'
+EMAIL_DBENGINE='MSSQL'
+EMAIL_FROM="$EMAIL_DBENGINE"' <backup@example.com>'
 EMAIL_SERVER='example.com'
 EMAIL_USER='backup@example.com'
 EMAIL_PASSWORD='yourstrongpassword'
 EMAIL_TLS='tls=auto'
-EMAIL_DBENGINE='MSSQL'
 EMAIL_HEADER='My company name'
 EMAIL_TO='first@example.com second@example.com'
 
