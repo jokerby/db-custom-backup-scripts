@@ -9,6 +9,7 @@
 #                               |_|   |_|    
 export PATH=$PATH:'/usr/bin/'
 DATE=$(date '+%F')
+BACKUP_EXTENTION='sql'
 DESTINATION_PATH='/var/lib/backup'
 TEMP_PATH='/tmp'
 LOG_PATH='/var/log/mysql/backup'
@@ -43,12 +44,11 @@ function writelog {
 	echo $MESSAGE
 }
 function createbackup {
-	DB_PATH="$1"
-	writelog "Starting back up and validate procedure of $DB_PATH database"
-	DB_NAME="$(basename $DB_PATH .sql)"
+	DB_NAME="$1"
+	writelog "Starting back up and validate procedure of $DB_NAME database"
 	mkdir -p "$DESTINATION_PATH/$DB_NAME/DAILY"
-	BACKUP_PATH="$DESTINATION_PATH/$DB_NAME/DAILY/$DATE.sql"
-	writelog "Creating sql file"
+	BACKUP_PATH="$DESTINATION_PATH/$DB_NAME/DAILY/$DATE.$BACKUP_EXTENTION"
+	writelog "Creating $BACKUP_EXTENTION file"
 	mysqldump -u"$DB_USER" -p"$DB_PASSWORD" --databases "$DB_NAME" > "$BACKUP_PATH"
 	if [[ $? -ne 0 ]]
 	then
@@ -59,9 +59,9 @@ function createbackup {
 	fi
 	writelog 'Deleting old daily backups'
 	ls -t "$DESTINATION_PATH/$DB_NAME/DAILY" | awk "NR>$KEEP_LAST_DAILY" | xargs rm -f
-	ln -sf $(realpath --relative-to="$DESTINATION_PATH/$DB_NAME" "$BACKUP_PATH") "$DESTINATION_PATH/$DB_NAME/recent-backup.sql"
+	ln -sf $(realpath --relative-to="$DESTINATION_PATH/$DB_NAME" "$BACKUP_PATH") "$DESTINATION_PATH/$DB_NAME/recent-backup.$BACKUP_EXTENTION"
 #	cd "$DESTINATION_PATH/$BACKUP_PATH"
-#	ln -sf "DAILY/$DATE.sql" 'recent-backup.sql'
+#	ln -sf "DAILY/$DATE.$BACKUP_EXTENTION" 'recent-backup.$BACKUP_EXTENTION'
 	if [[ $(date +%u) -eq 7 ]]
 	then
 		writelog 'Copying week backup'
