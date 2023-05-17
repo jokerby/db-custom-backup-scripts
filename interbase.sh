@@ -46,12 +46,12 @@ function writelog {
 function createbackup {
 	DB_PATH="$1"
 	writelog "Starting back up and validate procedure of $DB_PATH database"
-	DB_NAME="$(basename $DB_PATH .gdb)"
+	DB_NAME="$(basename $DB_PATH .$DB_EXTENTION)"
 	mkdir -p "$DESTINATION_PATH/$DB_NAME/DAILY"
-	GBK_PATH="$DESTINATION_PATH/$DB_NAME/DAILY/$DATE.gbk"
-	TEMP_DB_PATH="$TEMP_PATH/$DB_NAME.gdb"
-	writelog "Creating gbk file"
-	gbak -USER "$DB_USER" -PASSWORD "$DB_PASSWORD" -BACKUP_DATABASE "$DB_PATH" "$GBK_PATH"
+	BACKUP_PATH="$DESTINATION_PATH/$DB_NAME/DAILY/$DATE.$DB_EXTENTION"
+	TEMP_DB_PATH="$TEMP_PATH/$DB_NAME.$DB_EXTENTION"
+	writelog "Creating $DB_EXTENTION file"
+	gbak -USER "$DB_USER" -PASSWORD "$DB_PASSWORD" -BACKUP_DATABASE "$DB_PATH" "$BACKUP_PATH"
 	if [[ $? -ne 0 ]]
 	then
 		ERROR=$((ERROR + 1))
@@ -59,10 +59,10 @@ function createbackup {
 		writelog 'Exit current DB processing' 'Warn'
 		return 1
 	fi
-#	chmod 600 "$GBK_PATH"
-#	chown interbase:interbase "$GBK_PATH"
-	writelog "Unpacking gbk file for test purpose"
-	gbak -USER "$DB_USER" -PASSWORD "$DB_PASSWORD" -REPLACE_DATABASE -PAGE_SIZE 8192 "$GBK_PATH" "$TEMP_DB_PATH"
+#	chmod 600 "$BACKUP_PATH"
+#	chown interbase:interbase "$BACKUP_PATH"
+	writelog "Unpacking $DB_EXTENTION file for test purpose"
+	gbak -USER "$DB_USER" -PASSWORD "$DB_PASSWORD" -REPLACE_DATABASE -PAGE_SIZE 8192 "$BACKUP_PATH" "$TEMP_DB_PATH"
 	if [[ $? -ne 0 ]]
 	then
 		ERROR=$((ERROR + 1))
@@ -82,14 +82,14 @@ function createbackup {
 	rm "$TEMP_DB_PATH"
 	writelog 'Deleting old daily backups'
 	ls -t "$DESTINATION_PATH/$DB_NAME/DAILY" | awk "NR>$KEEP_LAST_DAILY" | xargs rm -f
-	ln -sf $(realpath --relative-to="$DESTINATION_PATH/$DB_NAME" "$GBK_PATH") "$DESTINATION_PATH/$DB_NAME/recent-backup.gbk"
+	ln -sf $(realpath --relative-to="$DESTINATION_PATH/$DB_NAME" "$BACKUP_PATH") "$DESTINATION_PATH/$DB_NAME/recent-backup.$DB_EXTENTION"
 #	cd "$DESTINATION_PATH/$DB_NAME"
-#	ln -sf "DAILY/$DATE.sql" 'recent-backup.sql'
+#	ln -sf "DAILY/$DATE.$DB_EXTENTION" 'recent-backup.$DB_EXTENTION'
 	if [[ $(date +%u) -eq 7 ]]
 	then
 		writelog 'Copying week backup'
 		mkdir -p "$DESTINATION_PATH/$DB_NAME/WEEKLY"
-		cp -p "$GBK_PATH" "$DESTINATION_PATH/$DB_NAME/WEEKLY"
+		cp -p "$BACKUP_PATH" "$DESTINATION_PATH/$DB_NAME/WEEKLY"
 		writelog 'Deleting old weekly backups'
 		ls -t "$DESTINATION_PATH/$DB_NAME/WEEKLY" | awk "NR>$KEEP_LAST_WEEKLY" | xargs rm -f
 	fi
@@ -97,11 +97,11 @@ function createbackup {
 	then
 		writelog 'Copying month backup'
 		mkdir -p "$DESTINATION_PATH/$DB_NAME/MONTHLY"
-		cp -p "$GBK_PATH" "$DESTINATION_PATH/$DB_NAME/MONTHLY"
+		cp -p "$BACKUP_PATH" "$DESTINATION_PATH/$DB_NAME/MONTHLY"
 		writelog 'Deleting old monthly backups'
 		ls -t "$DESTINATION_PATH/$DB_NAME/MONTHLY" | awk "NR>$KEEP_LAST_WEEKLY" | xargs rm -f
 	fi
-	writelog "Backup size $(du -h $GBK_PATH | awk '{print $1}')"
+	writelog "Backup size $(du -h $BACKUP_PATH | awk '{print $1}')"
 }
 function checkmount() {
 	findmnt "$DESTINATION_PATH" >/dev/null;
