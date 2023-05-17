@@ -24,12 +24,12 @@ LOG="$LOG_PATH/$DATE".log
 WARNING=0
 ERROR=0
 #email
-EMAIL_FROM='Interbase <backup@example.com>'
+EMAIL_DBENGINE='Interbase'
+EMAIL_FROM="$EMAIL_DBENGINE"' <backup@example.com>'
 EMAIL_SERVER='example.com'
 EMAIL_USER='backup@example.com'
 EMAIL_PASSWORD='yourstrongpassword'
 EMAIL_TLS='tls=auto'
-EMAIL_DBENGINE='Interbase'
 EMAIL_HEADER='My company name'
 EMAIL_TO='first@example.com second@example.com'
 
